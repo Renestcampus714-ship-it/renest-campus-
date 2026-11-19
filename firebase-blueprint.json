@@ -1,0 +1,539 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private authenticated student profile stored under users/{uid}.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fullName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 150
+        },
+        "collegeName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 150
+        },
+        "accommodationType": {
+          "type": "string",
+          "enum": ["Hostel", "PG", "Rented Accommodation", "Other"]
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "emailVerified": {
+          "type": "boolean"
+        },
+        "accountStatus": {
+          "type": "string",
+          "enum": ["Registered User", "Email Verified"]
+        },
+        "favouriteIds": {
+          "type": "array"
+        },
+        "recentlyViewedIds": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "fullName",
+        "email",
+        "collegeName",
+        "accommodationType",
+        "emailVerified",
+        "accountStatus",
+        "favouriteIds",
+        "recentlyViewedIds",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Listing": {
+      "title": "Listing",
+      "description": "Marketplace item listing created by a student seller.",
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "sellerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "sellerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "sellerCollege": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 150
+        },
+        "sellerAccountStatus": {
+          "type": "string",
+          "enum": ["Registered User", "Email Verified"]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 2000
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Study tables and furniture",
+            "Electronics and appliances",
+            "Books and academic materials",
+            "Storage and room essentials",
+            "Kitchen essentials",
+            "Hostel accessories",
+            "Other student essentials"
+          ]
+        },
+        "price": {
+          "type": "number"
+        },
+        "condition": {
+          "type": "string",
+          "enum": ["Brand New", "Like New", "Good", "Fair", "Needs Repair"]
+        },
+        "images": {
+          "type": "array"
+        },
+        "location": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "availabilityStatus": {
+          "type": "string",
+          "enum": ["Available", "Reserved", "Sold", "Transferred", "Removed"]
+        },
+        "listingStatus": {
+          "type": "string",
+          "enum": ["Active", "Removed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "listingId",
+        "sellerId",
+        "sellerName",
+        "sellerCollege",
+        "sellerAccountStatus",
+        "title",
+        "description",
+        "category",
+        "price",
+        "condition",
+        "images",
+        "location",
+        "availabilityStatus",
+        "listingStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Enquiry": {
+      "title": "Enquiry",
+      "description": "Buyer-to-seller item enquiry and handover coordination message.",
+      "type": "object",
+      "properties": {
+        "enquiryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "listingTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "listingPrice": {
+          "type": "number"
+        },
+        "buyerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "buyerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "sellerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "sellerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 1000
+        },
+        "sellerReply": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "preferredHandoverLocation": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "enquiryStatus": {
+          "type": "string",
+          "enum": ["Pending", "Responded", "Accepted", "Declined", "Closed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "enquiryId",
+        "listingId",
+        "listingTitle",
+        "listingPrice",
+        "buyerId",
+        "buyerName",
+        "sellerId",
+        "sellerName",
+        "message",
+        "enquiryStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "MVP handover and exchange transaction record between a student buyer and seller.",
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "enquiryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "buyerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "buyerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "sellerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "sellerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "itemTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "itemPrice": {
+          "type": "number"
+        },
+        "serviceFee": {
+          "type": "number"
+        },
+        "transactionStatus": {
+          "type": "string",
+          "enum": ["Requested", "Accepted", "Handover Scheduled", "Completed", "Cancelled"]
+        },
+        "handoverLocation": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 150
+        },
+        "handoverWindow": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "transactionId",
+        "listingId",
+        "enquiryId",
+        "buyerId",
+        "buyerName",
+        "sellerId",
+        "sellerName",
+        "itemTitle",
+        "itemPrice",
+        "serviceFee",
+        "transactionStatus",
+        "handoverLocation",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User-scoped activity notification for enquiries and transactions.",
+      "type": "object",
+      "properties": {
+        "notificationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "actorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "type": {
+          "type": "string",
+          "enum": ["enquiry", "transaction", "listing", "system"]
+        },
+        "linkPath": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "isRead": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "notificationId",
+        "userId",
+        "actorId",
+        "title",
+        "message",
+        "type",
+        "isRead",
+        "createdAt"
+      ]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "User-submitted moderation report for a marketplace listing.",
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "reportedBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "Inappropriate content",
+            "Misleading description",
+            "Prohibited item",
+            "Suspected spam",
+            "Unavailable item"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Open", "Under Review", "Resolved"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "reportId",
+        "listingId",
+        "reportedBy",
+        "reason",
+        "description",
+        "status",
+        "createdAt"
+      ]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Marketplace category definition.",
+      "type": "object",
+      "properties": {
+        "categoryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "displayOrder": {
+          "type": "number"
+        }
+      },
+      "required": ["categoryId", "name", "displayOrder"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user account profiles keyed by Firebase Auth UID."
+    },
+    "/listings/{listingId}": {
+      "schema": { "$ref": "#/entities/Listing" },
+      "description": "Student marketplace item listings."
+    },
+    "/enquiries/{enquiryId}": {
+      "schema": { "$ref": "#/entities/Enquiry" },
+      "description": "Buyer enquiries linked to specific listings and seller accounts."
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Agreed student-to-student handover transactions."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Activity notifications scoped to individual users."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/Report" },
+      "description": "Abuse and safety reports submitted by users against listings."
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "Publicly readable marketplace category metadata."
+    }
+  }
+}

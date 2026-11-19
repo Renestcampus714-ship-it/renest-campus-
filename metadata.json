@@ -1,0 +1,6 @@
+{
+  "name": "ReNest Campus",
+  "description": "Student-focused circular marketplace for buying, selling, and transferring hostel, PG, and campus essentials in Dehradun.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,412 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Shared Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid', 'fullName', 'email', 'collegeName', 'accommodationType',
+          'emailVerified', 'accountStatus', 'favouriteIds', 'recentlyViewedIds',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'fullName', 'email', 'collegeName', 'accommodationType',
+          'phone', 'photoURL', 'emailVerified', 'accountStatus',
+          'favouriteIds', 'recentlyViewedIds', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 150
+        && data.email == request.auth.token.email
+        && data.collegeName is string && data.collegeName.size() >= 2 && data.collegeName.size() <= 150
+        && data.accommodationType in ['Hostel', 'PG', 'Rented Accommodation', 'Other']
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 20))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.emailVerified is bool
+        && (data.emailVerified == false || request.auth.token.email_verified == true)
+        && data.accountStatus in ['Registered User', 'Email Verified']
+        && (data.accountStatus == 'Registered User' || request.auth.token.email_verified == true)
+        && data.favouriteIds is list && data.favouriteIds.size() <= 100
+        && (data.favouriteIds.size() == 0 || (data.favouriteIds[0] is string && data.favouriteIds[0].size() <= 128))
+        && data.recentlyViewedIds is list && data.recentlyViewedIds.size() <= 20
+        && (data.recentlyViewedIds.size() == 0 || (data.recentlyViewedIds[0] is string && data.recentlyViewedIds[0].size() <= 128))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidListing(data) {
+      return data.keys().hasAll([
+          'listingId', 'sellerId', 'sellerName', 'sellerCollege', 'sellerAccountStatus',
+          'title', 'description', 'category', 'price', 'condition', 'images',
+          'location', 'availabilityStatus', 'listingStatus', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'listingId', 'sellerId', 'sellerName', 'sellerCollege', 'sellerAccountStatus',
+          'title', 'description', 'category', 'price', 'condition', 'images',
+          'location', 'availabilityStatus', 'listingStatus', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.listingId)
+        && isValidId(data.sellerId)
+        && data.sellerId == request.auth.uid
+        && data.sellerName is string && data.sellerName.size() >= 2 && data.sellerName.size() <= 100
+        && data.sellerCollege is string && data.sellerCollege.size() >= 2 && data.sellerCollege.size() <= 150
+        && data.sellerAccountStatus in ['Registered User', 'Email Verified']
+        && data.title is string && data.title.size() >= 3 && data.title.size() <= 120
+        && data.description is string && data.description.size() >= 10 && data.description.size() <= 2000
+        && data.category in [
+          'Study tables and furniture',
+          'Electronics and appliances',
+          'Books and academic materials',
+          'Storage and room essentials',
+          'Kitchen essentials',
+          'Hostel accessories',
+          'Other student essentials'
+        ]
+        && data.price is number && data.price >= 0 && data.price <= 500000
+        && data.condition in ['Brand New', 'Like New', 'Good', 'Fair', 'Needs Repair']
+        && data.images is list && data.images.size() <= 5
+        && (data.images.size() == 0 || (data.images[0] is string && data.images[0].size() <= 350000))
+        && data.location is string && data.location.size() >= 2 && data.location.size() <= 120
+        && data.availabilityStatus in ['Available', 'Reserved', 'Sold', 'Transferred', 'Removed']
+        && data.listingStatus in ['Active', 'Removed']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidEnquiry(data) {
+      return data.keys().hasAll([
+          'enquiryId', 'listingId', 'listingTitle', 'listingPrice',
+          'buyerId', 'buyerName', 'sellerId', 'sellerName',
+          'message', 'enquiryStatus', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'enquiryId', 'listingId', 'listingTitle', 'listingPrice',
+          'buyerId', 'buyerName', 'sellerId', 'sellerName',
+          'message', 'sellerReply', 'preferredHandoverLocation',
+          'enquiryStatus', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.enquiryId)
+        && isValidId(data.listingId)
+        && data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 120
+        && data.listingPrice is number && data.listingPrice >= 0 && data.listingPrice <= 500000
+        && isValidId(data.buyerId)
+        && data.buyerName is string && data.buyerName.size() >= 2 && data.buyerName.size() <= 100
+        && isValidId(data.sellerId)
+        && data.sellerName is string && data.sellerName.size() >= 2 && data.sellerName.size() <= 100
+        && (data.buyerId == request.auth.uid || data.sellerId == request.auth.uid)
+        && data.message is string && data.message.size() >= 3 && data.message.size() <= 1000
+        && (!('sellerReply' in data) || (data.sellerReply is string && data.sellerReply.size() <= 1000))
+        && (!('preferredHandoverLocation' in data) || (data.preferredHandoverLocation is string && data.preferredHandoverLocation.size() <= 150))
+        && data.enquiryStatus in ['Pending', 'Responded', 'Accepted', 'Declined', 'Closed']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll([
+          'transactionId', 'listingId', 'enquiryId', 'buyerId', 'buyerName',
+          'sellerId', 'sellerName', 'itemTitle', 'itemPrice', 'serviceFee',
+          'transactionStatus', 'handoverLocation', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'transactionId', 'listingId', 'enquiryId', 'buyerId', 'buyerName',
+          'sellerId', 'sellerName', 'itemTitle', 'itemPrice', 'serviceFee',
+          'transactionStatus', 'handoverLocation', 'handoverWindow',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.transactionId)
+        && isValidId(data.listingId)
+        && isValidId(data.enquiryId)
+        && isValidId(data.buyerId)
+        && data.buyerName is string && data.buyerName.size() >= 2 && data.buyerName.size() <= 100
+        && isValidId(data.sellerId)
+        && data.sellerName is string && data.sellerName.size() >= 2 && data.sellerName.size() <= 100
+        && (data.buyerId == request.auth.uid || data.sellerId == request.auth.uid)
+        && data.itemTitle is string && data.itemTitle.size() >= 1 && data.itemTitle.size() <= 120
+        && data.itemPrice is number && data.itemPrice >= 0 && data.itemPrice <= 500000
+        && data.serviceFee is number && data.serviceFee == 40
+        && data.transactionStatus in ['Requested', 'Accepted', 'Handover Scheduled', 'Completed', 'Cancelled']
+        && data.handoverLocation is string && data.handoverLocation.size() >= 2 && data.handoverLocation.size() <= 150
+        && (!('handoverWindow' in data) || (data.handoverWindow is string && data.handoverWindow.size() <= 120))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll([
+          'notificationId', 'userId', 'actorId', 'title', 'message',
+          'type', 'isRead', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'notificationId', 'userId', 'actorId', 'title', 'message',
+          'type', 'linkPath', 'isRead', 'createdAt'
+        ])
+        && isValidId(data.notificationId)
+        && isValidId(data.userId)
+        && isValidId(data.actorId)
+        && (data.userId == request.auth.uid || data.actorId == request.auth.uid)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 500
+        && data.type in ['enquiry', 'transaction', 'listing', 'system']
+        && (!('linkPath' in data) || (data.linkPath is string && data.linkPath.size() <= 200))
+        && data.isRead is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidReport(data) {
+      return data.keys().hasAll([
+          'reportId', 'listingId', 'reportedBy', 'reason', 'description', 'status', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'reportId', 'listingId', 'reportedBy', 'reason', 'description', 'status', 'createdAt'
+        ])
+        && isValidId(data.reportId)
+        && isValidId(data.listingId)
+        && isValidId(data.reportedBy)
+        && data.reportedBy == request.auth.uid
+        && data.reason in [
+          'Inappropriate content',
+          'Misleading description',
+          'Prohibited item',
+          'Suspected spam',
+          'Unavailable item'
+        ]
+        && data.description is string && data.description.size() >= 5 && data.description.size() <= 1000
+        && data.status in ['Open', 'Under Review', 'Resolved']
+        && data.createdAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+
+    // 1. Users (Strictly private PII isolation)
+    match /users/{uid} {
+      allow get: if isOwner(uid) && isValidId(uid);
+      allow list: if false;
+      allow create: if isOwner(uid)
+        && isValidId(uid)
+        && isValidUserProfile(incoming())
+        && incoming().uid == uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isOwner(uid)
+        && isValidId(uid)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'collegeName', 'accommodationType', 'phone', 'photoURL', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['favouriteIds', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['recentlyViewedIds', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['emailVerified', 'accountStatus', 'updatedAt'])
+        );
+      allow delete: if false;
+    }
+
+    // 2. Listings (Publicly readable when Active; owner-only writes)
+    match /listings/{listingId} {
+      allow get: if isValidId(listingId)
+        && (existing().listingStatus == 'Active' || (isSignedIn() && existing().sellerId == request.auth.uid));
+      allow list: if existing().listingStatus == 'Active'
+        || (isSignedIn() && existing().sellerId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isValidId(listingId)
+        && isValidListing(incoming())
+        && incoming().listingId == listingId
+        && incoming().sellerId == request.auth.uid
+        && incoming().listingStatus == 'Active'
+        && incoming().availabilityStatus == 'Available'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn()
+        && isValidId(listingId)
+        && isValidListing(incoming())
+        && existing().sellerId == request.auth.uid
+        && incoming().listingId == existing().listingId
+        && incoming().sellerId == existing().sellerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'description', 'category', 'price', 'condition', 'images',
+            'location', 'sellerName', 'sellerCollege', 'sellerAccountStatus', 'updatedAt'
+          ])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['availabilityStatus', 'listingStatus', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['availabilityStatus', 'updatedAt'])
+        );
+      allow delete: if isSignedIn()
+        && isValidId(listingId)
+        && existing().sellerId == request.auth.uid;
+    }
+
+    // 3. Enquiries (Buyer & Seller private correspondence)
+    match /enquiries/{enquiryId} {
+      allow get: if isSignedIn()
+        && isValidId(enquiryId)
+        && (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid);
+      allow list: if isSignedIn()
+        && (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isValidId(enquiryId)
+        && isValidEnquiry(incoming())
+        && incoming().enquiryId == enquiryId
+        && incoming().buyerId == request.auth.uid
+        && incoming().buyerId != incoming().sellerId
+        && incoming().enquiryStatus == 'Pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/listings/$(incoming().listingId))
+        && get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.sellerId == incoming().sellerId
+        && get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.listingStatus == 'Active'
+        && get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.availabilityStatus in ['Available', 'Reserved'];
+      allow update: if isSignedIn()
+        && isValidId(enquiryId)
+        && isValidEnquiry(incoming())
+        && incoming().enquiryId == existing().enquiryId
+        && incoming().listingId == existing().listingId
+        && incoming().buyerId == existing().buyerId
+        && incoming().sellerId == existing().sellerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && existing().enquiryStatus != 'Closed'
+        && existing().enquiryStatus != 'Declined'
+        && (
+          (existing().sellerId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['enquiryStatus', 'sellerReply', 'updatedAt'])
+            && incoming().enquiryStatus in ['Responded', 'Accepted', 'Declined', 'Closed'])
+          || (existing().buyerId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['enquiryStatus', 'updatedAt'])
+            && incoming().enquiryStatus == 'Closed')
+        );
+      allow delete: if false;
+    }
+
+    // 4. Transactions (Participant-only handover tracking with terminal state lock)
+    match /transactions/{transactionId} {
+      allow get: if isSignedIn()
+        && isValidId(transactionId)
+        && (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid);
+      allow list: if isSignedIn()
+        && (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isValidId(transactionId)
+        && isValidTransaction(incoming())
+        && incoming().transactionId == transactionId
+        && incoming().buyerId != incoming().sellerId
+        && incoming().serviceFee == 40
+        && incoming().transactionStatus in ['Requested', 'Accepted']
+        && ((incoming().transactionStatus == 'Requested' && incoming().buyerId == request.auth.uid)
+          || (incoming().transactionStatus == 'Accepted' && incoming().sellerId == request.auth.uid))
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/listings/$(incoming().listingId))
+        && get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.sellerId == incoming().sellerId
+        && get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.availabilityStatus == 'Available'
+        && exists(/databases/$(database)/documents/enquiries/$(incoming().enquiryId))
+        && get(/databases/$(database)/documents/enquiries/$(incoming().enquiryId)).data.buyerId == incoming().buyerId;
+      allow update: if isSignedIn()
+        && isValidId(transactionId)
+        && isValidTransaction(incoming())
+        && incoming().transactionId == existing().transactionId
+        && incoming().listingId == existing().listingId
+        && incoming().enquiryId == existing().enquiryId
+        && incoming().buyerId == existing().buyerId
+        && incoming().sellerId == existing().sellerId
+        && incoming().itemPrice == existing().itemPrice
+        && incoming().serviceFee == existing().serviceFee
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && existing().transactionStatus != 'Completed'
+        && existing().transactionStatus != 'Cancelled'
+        && (
+          (existing().sellerId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['transactionStatus', 'handoverLocation', 'handoverWindow', 'updatedAt']))
+          || (existing().buyerId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['transactionStatus', 'updatedAt'])
+            && incoming().transactionStatus == 'Cancelled')
+        );
+      allow delete: if false;
+    }
+
+    // 5. Notifications (Recipient-scoped read/update/delete)
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn()
+        && isValidId(notificationId)
+        && existing().userId == request.auth.uid;
+      allow list: if isSignedIn()
+        && existing().userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidId(notificationId)
+        && isValidNotification(incoming())
+        && incoming().notificationId == notificationId
+        && incoming().actorId == request.auth.uid
+        && incoming().isRead == false
+        && incoming().createdAt == request.time;
+      allow update: if isSignedIn()
+        && isValidId(notificationId)
+        && isValidNotification(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().notificationId == existing().notificationId
+        && incoming().userId == existing().userId
+        && incoming().actorId == existing().actorId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isSignedIn()
+        && isValidId(notificationId)
+        && existing().userId == request.auth.uid;
+    }
+
+    // 6. Reports (Reporter-scoped read, create-only)
+    match /reports/{reportId} {
+      allow get: if isSignedIn()
+        && isValidId(reportId)
+        && existing().reportedBy == request.auth.uid;
+      allow list: if isSignedIn()
+        && existing().reportedBy == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidId(reportId)
+        && isValidReport(incoming())
+        && incoming().reportId == reportId
+        && incoming().reportedBy == request.auth.uid
+        && incoming().status == 'Open'
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/listings/$(incoming().listingId));
+      allow update, delete: if false;
+    }
+
+    // 7. Categories (Public read-only catalog)
+    match /categories/{categoryId} {
+      allow get: if isValidId(categoryId);
+      allow list: if true;
+      allow write: if false;
+    }
+  }
+}
